@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calisthenics Corps</title>
+    <link rel="apple-touch-icon" href="https://img.icons8.com/color/96/kettlebell.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #fdfcf8; color: #1f2937; -webkit-tap-highlight-color: transparent; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .chart-container { position: relative; width: 100%; height: 300px; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #78716c; border-radius: 4px; }
+        .active-nav { border-left-color: #ea580c !important; background-color: #e7e5e4 !important; font-weight: 700; color: #000; }
+        /* Transitions */
+        .fade-enter-active { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Mobile optim */
+        input, button { touch-action: manipulation; }
+    </style>
+</head>
+<body class="h-screen flex flex-col md:flex-row overflow-hidden text-stone-800">
+
+    <!-- Mobile Header -->
+    <header class="md:hidden bg-stone-100 p-4 border-b border-stone-200 flex justify-between items-center z-10 shadow-sm safe-top">
+        <h1 class="text-lg font-bold tracking-tight text-stone-700">CALISTHENICS<span class="text-orange-600">CORPS</span></h1>
+        <button id="menu-btn" class="text-stone-600 focus:outline-none font-bold border-2 border-stone-300 rounded px-2 py-1">MENU</button>
+    </header>
+
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar" class="bg-stone-50 w-full md:w-64 flex-shrink-0 border-r border-stone-200 hidden md:flex flex-col justify-between h-full absolute md:relative z-20 transition-all duration-300 shadow-2xl md:shadow-none">
+        <div>
+            <div class="p-6 border-b border-stone-200 hidden md:block">
+                <h1 class="text-2xl font-bold tracking-tight text-stone-700">CALISTHENICS<br><span class="text-stone-400">CORPS</span></h1>
+                <p class="text-xs text-orange-600 mt-1 uppercase tracking-wider font-bold">● V3: Data Ops</p>
+            </div>
+            <div class="p-4 space-y-2">
+                <p class="px-4 text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">Modules</p>
+                <button onclick="router('dashboard')" id="nav-dashboard" class="nav-item w-full text-left px-4 py-3 rounded-md text-sm text-stone-600 hover:bg-stone-200 transition-colors border-l-4 border-transparent active-nav">Dashboard & Vitals</button>
+                <button onclick="router('protocol')" id="nav-protocol" class="nav-item w-full text-left px-4 py-3 rounded-md text-sm text-stone-600 hover:bg-stone-200 transition-colors border-l-4 border-transparent">The Protocol</button>
+                <button onclick="router('intel')" id="nav-intel" class="nav-item w-full text-left px-4 py-3 rounded-md text-sm text-stone-600 hover:bg-stone-200 transition-colors border-l-4 border-transparent">Intel & Nutrition</button>
+                <button onclick="router('data')" id="nav-data" class="nav-item w-full text-left px-4 py-3 rounded-md text-sm text-stone-600 hover:bg-stone-200 transition-colors border-l-4 border-transparent">Data HQ (Save/Load)</button>
+            </div>
+        </div>
+        <div class="p-4 bg-stone-800 text-stone-200 m-4 rounded-lg cursor-pointer hover:bg-stone-700 transition active:scale-95" onclick="toggleCoderMode()">
+            <div class="flex items-center justify-between">
+                <div><p class="text-xs font-mono text-orange-400">DEV_MODE</p><p class="text-sm font-bold">Spine Saver</p></div>
+                <div id="coder-timer-display" class="font-mono text-lg">55:00</div>
+            </div>
+            <div class="w-full bg-stone-600 h-1 mt-2 rounded-full overflow-hidden"><div id="coder-progress" class="bg-orange-500 h-full w-0"></div></div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto relative bg-[#fdfcf8] p-4 md:p-8 pb-24 md:pb-8" id="main-content">
+        <!-- Injected Content -->
+    </main>
+
+    <!-- Floating Combat Timer -->
+    <div id="combat-timer" class="fixed bottom-6 right-6 bg-stone-900 text-white p-4 rounded-lg w-48 z-50 hidden md:block cursor-move select-none shadow-xl border border-stone-700">
+        <div class="flex justify-between items-center mb-2 border-b border-stone-700 pb-1">
+            <span class="text-xs font-mono text-stone-400">TAC-TIMER</span>
+            <button onclick="toggleTimerVisibility()" class="text-stone-500 hover:text-white">x</button>
+        </div>
+        <div class="text-center">
+            <div id="stopwatch-display" class="font-mono text-3xl font-bold tracking-widest mb-2">00:00</div>
+            <div class="flex space-x-2 justify-center">
+                <button onclick="startStopwatch()" class="bg-orange-600 hover:bg-orange-700 text-xs px-3 py-1 rounded font-bold">START</button>
+                <button onclick="resetStopwatch()" class="bg-stone-700 hover:bg-stone-600 text-xs px-3 py-1 rounded">RST</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mobile Timer Trigger -->
+    <button onclick="openTimer()" class="md:hidden fixed bottom-6 right-6 bg-orange-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center font-bold text-2xl z-40">⏱</button>
+
+    <input type="file" id="file-import" class="hidden" accept=".json" onchange="handleFileSelect(this)">
+
+    <script>
+        const DEFAULT_STATE = { user: { currentWeight: 68, targetWeight: 60, startWeight: 68, startDate: new Date().toISOString(), waterIntake: 0, supps: {zinc: false, creatine: false} }, history: { weight: [{date: 'Start', val: 68}], workouts: {} }, lastLogin: new Date().toLocaleDateString() };
+        let appData = JSON.parse(localStorage.getItem('calisthenicsApp_v3')) || DEFAULT_STATE;
+        
+        // Reset Logic
+        if (appData.lastLogin !== new Date().toLocaleDateString()) { 
+            appData.user.waterIntake = 0; appData.user.supps = {zinc: false, creatine: false}; appData.lastLogin = new Date().toLocaleDateString(); saveData(); 
+        }
+        function saveData() { localStorage.setItem('calisthenicsApp_v3', JSON.stringify(appData)); updateUI(); }
+        function updateUI() { if(document.getElementById('water-count')) renderWaterTracker(); }
+
+        const PROTOCOL_DATA = {
+            week1: { theme: "Phase 1: Foundation", desc: "Low volume. Focus on form. Don't rush.", days: [
+                { id: "w1d1", name: "Day 1: Push", exercises: [{name:"Pushups", reps:"3x10", cue:"Chest to floor"}, {name:"Squats", reps:"3x15", cue:"Break parallel"}, {name:"Plank", reps:"3x30s", cue:"Core tight"}] },
+                { id: "w1d2", name: "Day 2: Cardio/Mobility", exercises: [{name:"Jog", reps:"20min", cue:"Zone 2"}, {name:"Shoulder Dislocates", reps:"3x10", cue:"Stick/Towel"}] },
+                { id: "w1d3", name: "Day 3: Pull", exercises: [{name:"Inv. Rows", reps:"3x8", cue:"Sternum to bar"}, {name:"Lunges", reps:"3x10/leg", cue:"Vertical shin"}, {name:"Side Plank", reps:"3x20s", cue:"Hips up"}] },
+                { id: "w1d4", name: "Day 4: Dev Work", exercises: [{name:"Rest", reps:"-", cue:"Code & Stretch Wrists"}] },
+                { id: "w1d5", name: "Day 5: Full Body", exercises: [{name:"Pushups", reps:"3x12", cue:"Controlled"}, {name:"Squats", reps:"3x20", cue:"Explosive up"}, {name:"Rows", reps:"3x10", cue:"Squeeze back"}] }
+            ]},
+            week2: { theme: "Phase 2: Volume", desc: "Adding reps. Minimal rest.", days: [
+                { id: "w2d1", name: "Day 1: Upper Blast", exercises: [{name:"Diamond Pushups", reps:"3x8", cue:"Triceps"}, {name:"Wide Pushups", reps:"3x10", cue:"Chest"}, {name:"Pike Pushups", reps:"3x8", cue:"Shoulders"}] },
+                { id: "w2d2", name: "Day 2: Lower Power", exercises: [{name:"Jump Squats", reps:"4x10", cue:"Soft landing"}, {name:"Bulgarian Split Squat", reps:"3x8/leg", cue:"Balance"}, {name:"Calf Raises", reps:"3x20", cue:"Slow"}] },
+                { id: "w2d3", name: "Day 3: Core/Cond.", exercises: [{name:"Burpees", reps:"3x10", cue:"Pace yourself"}, {name:"Leg Raises", reps:"3x12", cue:"No swinging"}, {name:"Plank", reps:"3x45s", cue:"Hold"}] },
+                { id: "w2d4", name: "Day 4: Rest", exercises: [{name:"Yoga", reps:"20min", cue:"YouTube video"}] },
+                { id: "w2d5", name: "Day 5: The Test", exercises: [{name:"Max Pushups", reps:"1 Set", cue:"To failure"}, {name:"Max Squats", reps:"1 Set", cue:"To failure"}] }
+            ]},
+            week3: { theme: "Phase 3: Intensity", desc: "Harder variations.", days: [{id:"w3d1", name:"Coming Soon", exercises:[]}] },
+            week4: { theme: "Phase 4: Peak", desc: "Deload & Final Test.", days: [{id:"w4d1", name:"Coming Soon", exercises:[]}] }
+        };
+
+        function exportBackup() {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(appData, null, 2)], { type: "application/json" }));
+            a.download = `calisthenics_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+        function triggerImport() { document.getElementById('file-import').click(); }
+        function handleFileSelect(input) {
+            const reader = new FileReader();
+            reader.onload = (e) => { try { appData = JSON.parse(e.target.result); saveData(); alert("Data restored!"); location.reload(); } catch (err) { alert("Error"); } };
+            reader.readAsText(input.files[0]);
+        }
+        function exportCSV() {
+            let csv = "Date,Weight (kg)\n" + appData.history.weight.map(r => `${r.date},${r.val}`).join('\n');
+            const a = document.createElement("a");
+            a.href = encodeURI("data:text/csv;charset=utf-8," + csv);
+            a.download = `weight_log.csv`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+
+        function renderDashboard() {
+            const wl = (appData.user.startWeight - appData.user.currentWeight).toFixed(1);
+            document.getElementById('main-content').innerHTML = `
+                <div class="max-w-6xl mx-auto space-y-6 fade-enter-active">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-white p-5 rounded border border-stone-200 shadow-sm relative overflow-hidden">
+                            <p class="text-xs font-bold text-stone-400 uppercase">Weight (Goal: ${appData.user.targetWeight}kg)</p>
+                            <div class="flex items-baseline mt-2"><span class="text-4xl font-bold text-stone-800">${appData.user.currentWeight}</span><span class="text-sm text-stone-500 ml-1">kg</span></div>
+                            <p class="text-xs ${wl > 0 ? 'text-green-600' : 'text-stone-400'} mt-1 font-mono">${wl > 0 ? '-' + wl : '+0'}kg total</p>
+                            <div class="mt-4 flex space-x-2"><input type="number" id="new-weight" placeholder="New Weight" class="w-full bg-stone-50 border border-stone-300 rounded px-2 py-1 text-sm"><button onclick="logWeight()" class="bg-stone-800 text-white px-3 py-1 rounded text-xs font-bold">LOG</button></div>
+                        </div>
+                        <div class="bg-white p-5 rounded border border-stone-200 shadow-sm">
+                            <div class="flex justify-between items-start"><div><p class="text-xs font-bold text-stone-400 uppercase">Hydration</p><h3 class="text-2xl font-bold text-stone-800 mt-1"><span id="water-display">${(appData.user.waterIntake * 0.25).toFixed(2)}</span>L <span class="text-sm text-stone-400 font-normal">/ 3.5L</span></h3></div><button onclick="addWater()" class="bg-blue-100 text-blue-600 p-2 rounded-full">+250ml</button></div>
+                            <div class="w-full bg-stone-100 h-4 mt-4 rounded-full overflow-hidden"><div id="water-bar" class="bg-blue-500 h-full transition-all duration-500" style="width: ${(appData.user.waterIntake * 0.25 / 3.5) * 100}%"></div></div>
+                        </div>
+                        <div class="bg-white p-5 rounded border border-stone-200 shadow-sm">
+                            <p class="text-xs font-bold text-stone-400 uppercase mb-2">Daily Stack</p>
+                            <div class="flex flex-col space-y-2">
+                                <button onclick="toggleSupp('zinc')" class="flex items-center justify-between p-2 rounded border ${appData.user.supps.zinc ? 'bg-green-50 border-green-500' : 'border-stone-200'}"><span>💊 Zinc</span><span>${appData.user.supps.zinc ? '✓' : ''}</span></button>
+                                <button onclick="toggleSupp('creatine')" class="flex items-center justify-between p-2 rounded border ${appData.user.supps.creatine ? 'bg-green-50 border-green-500' : 'border-stone-200'}"><span>💧 Creatine</span><span>${appData.user.supps.creatine ? '✓' : ''}</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white p-5 rounded border border-stone-200"><h3 class="text-sm font-bold text-stone-600 mb-4">Trajectory</h3><div class="chart-container"><canvas id="mainWeightChart"></canvas></div></div>
+                        <div class="bg-white p-5 rounded border border-stone-200"><h3 class="text-sm font-bold text-stone-600 mb-4">Attributes</h3><div class="chart-container"><canvas id="radarChart"></canvas></div></div>
+                    </div>
+                </div>`;
+            setTimeout(() => { initCharts(); }, 0);
+        }
+
+        function renderProtocol() {
+            let btns = Object.keys(PROTOCOL_DATA).map(k => `<button onclick="renderWeek('${k}')" class="px-4 py-2 text-sm font-bold rounded bg-stone-100 text-stone-600 hover:bg-stone-200">${PROTOCOL_DATA[k].theme.split(':')[0]}</button>`).join(' ');
+            document.getElementById('main-content').innerHTML = `<div class="max-w-4xl mx-auto animate-fade-in"><h2 class="text-2xl font-bold text-stone-800 mb-4">Protocol</h2><div class="flex space-x-2 overflow-x-auto pb-4 mb-2">${btns}</div><div id="protocol-view"></div></div>`;
+            renderWeek('week1');
+        }
+
+        function renderWeek(k) {
+            const w = PROTOCOL_DATA[k];
+            let html = `<div class="bg-stone-800 text-white p-4 rounded mb-6"><h3 class="font-bold text-lg text-orange-500">${w.theme}</h3><p class="text-sm opacity-80">${w.desc}</p></div><div class="space-y-3">`;
+            w.days.forEach(d => {
+                const done = appData.history.workouts[d.id];
+                html += `<div class="border ${done?'bg-green-50 border-green-200':'bg-white border-stone-200'} rounded-lg p-4"><div class="flex justify-between items-center" onclick="toggleDetails('${d.id}')"><div class="flex items-center gap-3"><div onclick="event.stopPropagation();toggleWork('${d.id}')" class="w-6 h-6 rounded border-2 flex items-center justify-center cursor-pointer ${done?'bg-green-500 border-green-500 text-white':'border-stone-300'}">${done?'✓':''}</div><h4 class="font-bold text-stone-700">${d.name}</h4></div><span class="text-xs text-stone-400">▼</span></div><div id="det-${d.id}" class="hidden mt-3 pt-3 border-t border-stone-100 space-y-2 pl-9">${d.exercises.map(e=>`<div class="text-sm flex justify-between"><span>${e.name}</span><span class="bg-stone-100 px-2 rounded font-mono text-xs py-1">${e.reps}</span></div><div class="text-xs text-stone-400 italic">${e.cue}</div>`).join('')}</div></div>`;
+            });
+            document.getElementById('protocol-view').innerHTML = html + "</div>";
+        }
+
+        function renderDataHQ() {
+            document.getElementById('main-content').innerHTML = `<div class="max-w-xl mx-auto space-y-6 fade-enter-active"><h2 class="text-2xl font-bold">Data HQ</h2><div class="grid gap-4"><button onclick="exportBackup()" class="bg-stone-800 text-white p-4 rounded font-bold">Download Full Backup (JSON)</button><button onclick="triggerImport()" class="bg-white border border-stone-300 p-4 rounded font-bold">Upload Backup (JSON)</button><button onclick="exportCSV()" class="bg-green-600 text-white p-4 rounded font-bold">Export CSV (Excel)</button></div></div>`;
+        }
+
+        function logWeight() { const v = parseFloat(document.getElementById('new-weight').value); if(v){ appData.user.currentWeight = v; appData.history.weight.push({date: new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'}), val:v}); saveData(); renderDashboard(); } }
+        function addWater() { appData.user.waterIntake++; saveData(); renderDashboard(); }
+        function toggleSupp(t) { appData.user.supps[t] = !appData.user.supps[t]; saveData(); renderDashboard(); }
+        function toggleWork(id) { appData.history.workouts[id] = !appData.history.workouts[id]; saveData(); renderProtocol(); }
+        function toggleDetails(id) { document.getElementById(`det-${id}`).classList.toggle('hidden'); }
+        
+        // Timer Logic
+        let ti, ts=0, tr=false;
+        function startStopwatch() { if(!tr) { tr=true; ti=setInterval(()=>{ts++; updateTimerDisplay();},1000); } }
+        function resetStopwatch() { clearInterval(ti); tr=false; ts=0; updateTimerDisplay(); }
+        function updateTimerDisplay() { const t = `${Math.floor(ts/60).toString().padStart(2,'0')}:${(ts%60).toString().padStart(2,'0')}`; document.getElementById('stopwatch-display').innerText=t; }
+        function toggleTimerVisibility() { document.getElementById('combat-timer').classList.toggle('hidden'); }
+        function openTimer() { document.getElementById('combat-timer').classList.remove('hidden'); }
+
+        // Coder Timer
+        let ci, cs=55*60, cr=false;
+        function toggleCoderMode() { const d=document.getElementById('coder-timer-display'); if(cr){clearInterval(ci);cr=false;d.classList.remove('text-green-500');} else { cr=true; d.classList.add('text-green-500'); ci=setInterval(()=>{ if(cs>0){cs--; d.innerText=`${Math.floor(cs/60)}:${(cs%60).toString().padStart(2,'0')}`; document.getElementById('coder-progress').style.width=`${((3300-cs)/3300)*100}%`;} else {clearInterval(ci); alert("CODE BREAK"); cs=55*60; cr=false;} },1000); } }
+
+        function initCharts() {
+            new Chart(document.getElementById('mainWeightChart'), { type: 'line', data: { labels: appData.history.weight.map(h=>h.date), datasets: [{label:'Kg', data:appData.history.weight.map(h=>h.val), borderColor:'#ea580c', tension:0.1}] }, options: {responsive:true, maintainAspectRatio:false} });
+            new Chart(document.getElementById('radarChart'), { type: 'radar', data: { labels: ['Str','End','Mob','Rec','Disc'], datasets: [{label:'Stats', data:[45,40,50,60,55], borderColor:'#78716c', backgroundColor:'rgba(120,113,108,0.5)'}] }, options: {responsive:true, maintainAspectRatio:false, plugins:{legend:false}, scales:{r:{suggestedMin:0, suggestedMax:100}}} });
+        }
+
+        function router(p) { 
+            document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active-nav')); 
+            const n = document.getElementById(`nav-${p}`); if(n) n.classList.add('active-nav');
+            if(p==='dashboard') renderDashboard(); if(p==='protocol') renderProtocol(); if(p==='data') renderDataHQ(); if(p==='intel') document.getElementById('main-content').innerHTML = `<div class="max-w-2xl mx-auto"><h2 class="text-2xl font-bold mb-4">Intel</h2><div class="bg-white p-6 rounded shadow border">Calculated Protein Req: <strong>${(appData.user.currentWeight*2).toFixed(0)}g</strong></div></div>`;
+            if(window.innerWidth < 768) document.getElementById('sidebar').classList.add('hidden');
+        }
+
+        document.getElementById('menu-btn').addEventListener('click', ()=>{ const s=document.getElementById('sidebar'); s.classList.toggle('hidden'); s.classList.toggle('absolute'); s.classList.toggle('z-50'); s.classList.toggle('w-full'); s.classList.toggle('h-full'); });
+        document.addEventListener('DOMContentLoaded', ()=>{ renderDashboard(); });
+    </script>
+</body>
+</html>
